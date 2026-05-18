@@ -1,6 +1,6 @@
 {
   "name": "studyforge",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "AI-powered local study companion using Ollama",
   "main": "main.js",
   "scripts": {
