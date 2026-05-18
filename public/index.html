@@ -233,7 +233,17 @@
             <div id="pull-progress-area" class="pull-progress hidden"></div>
           </div>
           <div class="card" style="margin-top: 20px;">
-            <h3><span class="material-symbols-rounded">smart_toy</span>Installed Models</h3>
+            <h3><span class="material-symbols-rounded">key</span>Cloud API Keys (Optional)</h3>
+            <p class="models-hint">Enter your OpenAI API key to enable cloud models (e.g. <code>gpt-4o-mini</code>, <code>gpt-4o</code>).</p>
+            <div class="pull-row">
+              <input type="password" id="openai-key-input" placeholder="sk-..." aria-label="OpenAI API Key" style="font-family: monospace;">
+              <button class="btn btn-primary" onclick="saveApiKey()">
+                <span class="material-symbols-rounded">save</span>Save Key
+              </button>
+            </div>
+          </div>
+          <div class="card" style="margin-top: 20px;">
+            <h3><span class="material-symbols-rounded">smart_toy</span>Installed Local Models</h3>
             <div id="installed-models-list" class="card-list"></div>
           </div>
         </div>

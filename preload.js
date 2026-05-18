@@ -42,4 +42,8 @@ contextBridge.exposeInMainWorld('api', {
   aiHighlights:    (args) => ipcRenderer.invoke('ai-highlights', args),
   aiMockExam:      (args) => ipcRenderer.invoke('ai-mock-exam', args),
   aiChat:          (args) => ipcRenderer.invoke('ai-chat', args),
+  
+  // Settings / API Keys
+  getApiKey:       () => ipcRenderer.invoke('get-api-key'),
+  saveApiKey:      (key) => ipcRenderer.invoke('save-api-key', key),
 });

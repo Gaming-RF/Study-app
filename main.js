@@ -100,10 +100,38 @@ async function extractText(filePath) {
   return '';
 }
 
-// ─── OLLAMA HELPER ─────────────────────────────────────────────────────────────
+// ─── OLLAMA & OPENAI HELPER ───────────────────────────────────────────────────
 const OLLAMA_URL = 'http://localhost:11434';
 
 async function ollamaChat(model, messages) {
+  if (model && model.startsWith('openai/')) {
+    const realModel = model.replace('openai/', '');
+    const s = db('settings').load();
+    const apiKey = s.openaiApiKey || '';
+    if (!apiKey) {
+      throw new Error('OpenAI API Key is not configured. Please add an API Key in the Manage Models view.');
+    }
+    
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: realModel,
+        messages: messages,
+        stream: false
+      })
+    });
+    if (!res.ok) throw new Error(`OpenAI API error ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      return data.choices[0].message.content;
+    }
+    throw new Error('Invalid response from OpenAI API.');
+  }
+
   const res = await fetch(`${OLLAMA_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -281,6 +309,19 @@ ipcMain.handle('delete-material', (_, id) => {
     if (fs.existsSync(fp)) fs.unlinkSync(fp);
   }
   d.save(all.filter(m => m.id !== id));
+  return { success: true };
+});
+
+// ─── SETTINGS / API KEYS IPC ──────────────────────────────────────────────────
+ipcMain.handle('get-api-key', () => {
+  const s = db('settings').load();
+  return s.openaiApiKey || '';
+});
+
+ipcMain.handle('save-api-key', (_, key) => {
+  const s = db('settings').load();
+  s.openaiApiKey = key;
+  db('settings').save(s);
   return { success: true };
 });
 

@@ -178,6 +178,8 @@ async function init() {
     console.log("Events setup complete.");
     setupWindowControls();
     console.log("Window controls setup complete.");
+    await loadApiKey();
+    console.log("API Key loaded.");
     await checkOllama();
     console.log("Ollama check complete.");
     await loadAllData();
@@ -195,33 +197,100 @@ function setupWindowControls() {
   document.getElementById('btn-close').addEventListener('click', () => window.api.close());
 }
 
-// === OLLAMA ===
+// === OLLAMA & CLOUD MODELS ===
+async function loadApiKey() {
+  try {
+    const key = await window.api.getApiKey();
+    state.openAiApiKey = key;
+    const input = document.getElementById('openai-key-input');
+    if (input) {
+      input.value = key;
+    }
+  } catch (e) {}
+}
+
+async function saveApiKey() {
+  const input = document.getElementById('openai-key-input');
+  if (!input) return;
+  const key = input.value.trim();
+  showLoading('Saving API Key...');
+  try {
+    await window.api.saveApiKey(key);
+    state.openAiApiKey = key;
+    showToast('OpenAI API Key updated!');
+    await checkOllama(); // Refresh select dropdown
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
 async function checkOllama() {
+  let ollamaConnected = false;
   try {
     const data = await window.api.ollamaStatus();
     if (data.connected) {
       els.ollamaBadge.textContent = 'Online';
       els.ollamaBadge.className = 'badge online';
       state.models = data.models;
-      
-      const options = state.models.map(m => 
-        `<option value="${m.name}" ${state.currentModel === m.name ? 'selected' : ''}>${m.name} (${(m.size/1024/1024/1024).toFixed(1)}GB)</option>`
-      ).join('');
-      els.modelSelect.innerHTML = options || '<option value="">No models installed</option>';
-      
-      if (!state.currentModel && state.models.length > 0) {
-        state.currentModel = state.models[0].name;
-        localStorage.setItem('ollama_model', state.currentModel);
-      }
-      renderModels();
+      ollamaConnected = true;
     } else {
       throw new Error(data.error || 'Cannot connect');
     }
   } catch (err) {
     els.ollamaBadge.textContent = 'Offline';
     els.ollamaBadge.className = 'badge';
-    els.modelSelect.innerHTML = '<option value="">Ollama Offline</option>';
-    showToast('Could not connect to Ollama. Make sure it is running locally.', 'error');
+    state.models = [];
+  }
+
+  // Render dropdown option groups
+  let html = '';
+
+  // Group 1: OpenAI Cloud Models
+  if (state.openAiApiKey) {
+    html += `
+      <optgroup label="Cloud Models (OpenAI)">
+        <option value="openai/gpt-4o-mini">gpt-4o-mini</option>
+        <option value="openai/gpt-4o">gpt-4o</option>
+        <option value="openai/gpt-3.5-turbo">gpt-3.5-turbo</option>
+      </optgroup>
+    `;
+  }
+
+  // Group 2: Ollama Local Models
+  if (state.models.length > 0) {
+    html += `
+      <optgroup label="Local Models (Ollama)">
+        ${state.models.map(m => `<option value="${m.name}">${m.name} (${(m.size/1024/1024/1024).toFixed(1)}GB)</option>`).join('')}
+      </optgroup>
+    `;
+  }
+
+  if (!html) {
+    html = '<option value="">Ollama Offline & No Cloud API Key</option>';
+  }
+
+  els.modelSelect.innerHTML = html;
+
+  // Restore current model or select first available
+  if (state.currentModel && els.modelSelect.querySelector(`option[value="${state.currentModel}"]`)) {
+    els.modelSelect.value = state.currentModel;
+  } else {
+    const firstOpt = els.modelSelect.querySelector('option');
+    if (firstOpt) {
+      state.currentModel = firstOpt.value;
+      els.modelSelect.value = state.currentModel;
+      localStorage.setItem('ollama_model', state.currentModel);
+    }
+  }
+
+  renderModels();
+
+  // Also load saved key into input if it exists
+  const keyInput = document.getElementById('openai-key-input');
+  if (keyInput && state.openAiApiKey) {
+    keyInput.value = state.openAiApiKey;
   }
 }
 
