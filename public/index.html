@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="StudyForge - AI-powered local study companion using Ollama">
+  <title>StudyForge — AI Study Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Custom Titlebar -->
+  <div id="titlebar">
+    <div class="titlebar-drag">
+      <span class="material-symbols-rounded titlebar-icon">local_fire_department</span>
+      <span class="titlebar-title">StudyForge</span>
+    </div>
+    <div class="titlebar-controls">
+      <button class="titlebar-btn" id="btn-minimize" title="Minimize" aria-label="Minimize">
+        <span class="material-symbols-rounded">remove</span>
+      </button>
+      <button class="titlebar-btn" id="btn-maximize" title="Maximize" aria-label="Maximize">
+        <span class="material-symbols-rounded">crop_square</span>
+      </button>
+      <button class="titlebar-btn titlebar-close" id="btn-close" title="Close" aria-label="Close">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="app">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="material-symbols-rounded logo-icon">local_fire_department</span>
+          <h1>StudyForge</h1>
+        </div>
+        <span class="badge" id="ollama-badge">Offline</span>
+      </div>
+      <nav id="main-nav" aria-label="Main navigation">
+        <button class="nav-btn active" data-view="dashboard">
+          <span class="material-symbols-rounded">dashboard</span>Dashboard
+        </button>
+        <button class="nav-btn" data-view="courses">
+          <span class="material-symbols-rounded">school</span>Courses
+        </button>
+        <button class="nav-btn" data-view="materials">
+          <span class="material-symbols-rounded">description</span>Materials
+        </button>
+        <button class="nav-btn" data-view="notes">
+          <span class="material-symbols-rounded">edit_note</span>Notes
+        </button>
+        <button class="nav-btn" data-view="exams">
+          <span class="material-symbols-rounded">quiz</span>Mock Exams
+        </button>
+        <button class="nav-btn" data-view="chat">
+          <span class="material-symbols-rounded">chat</span>AI Tutor
+        </button>
+        <button class="nav-btn" data-view="models">
+          <span class="material-symbols-rounded">smart_toy</span>Models
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <label class="model-select-label" for="model-select">Ollama Model</label>
+        <select id="model-select" title="Select Ollama model" aria-label="Select Ollama model">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content">
+
+      <!-- Dashboard View -->
+      <section id="view-dashboard" class="view active">
+        <div class="view-header">
+          <div>
+            <h2>Dashboard</h2>
+            <p class="subtitle">Welcome back! Here's your study overview.</p>
+          </div>
+        </div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="dashboard-grid">
+          <div class="card" id="recent-materials-card">
+            <h3><span class="material-symbols-rounded">description</span>Recent Materials</h3>
+            <div id="recent-materials-list" class="card-list"></div>
+          </div>
+          <div class="card" id="recent-notes-card">
+            <h3><span class="material-symbols-rounded">edit_note</span>Recent Notes</h3>
+            <div id="recent-notes-list" class="card-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Courses View -->
+      <section id="view-courses" class="view">
+        <div class="view-header">
+          <h2>Courses</h2>
+          <button class="btn btn-primary" onclick="showCreateCourseModal()">
+            <span class="material-symbols-rounded">add</span>New Course
+          </button>
+        </div>
+        <div id="courses-grid" class="courses-grid"></div>
+      </section>
+
+      <!-- Materials View -->
+      <section id="view-materials" class="view">
+        <div class="view-header">
+          <h2>Study Materials</h2>
+          <button class="btn btn-primary" onclick="showUploadModal()">
+            <span class="material-symbols-rounded">upload_file</span>Upload Files
+          </button>
+        </div>
+        <div class="filter-bar">
+          <select id="materials-course-filter" title="Filter by course" aria-label="Filter materials by course" onchange="loadMaterials()">
+            <option value="">All Courses</option>
+          </select>
+        </div>
+        <div id="materials-list" class="materials-list"></div>
+      </section>
+
+      <!-- Material Detail View -->
+      <section id="view-material-detail" class="view">
+        <div class="view-header">
+          <button class="btn btn-ghost" onclick="switchView('materials')">
+            <span class="material-symbols-rounded">arrow_back</span>Back
+          </button>
+          <h2 id="material-detail-title">Material</h2>
+        </div>
+        <div class="material-actions">
+          <button class="btn btn-accent" onclick="generateNotes()">
+            <span class="material-symbols-rounded">auto_awesome</span>Generate Notes
+          </button>
+          <button class="btn btn-secondary" onclick="generateHighlights()">
+            <span class="material-symbols-rounded">highlight</span>Highlights
+          </button>
+          <button class="btn btn-secondary" onclick="speakMaterial()">
+            <span class="material-symbols-rounded">record_voice_over</span>Text to Speech
+          </button>
+          <button class="btn btn-ghost hidden" id="tts-stop-btn" onclick="stopSpeaking()">
+            <span class="material-symbols-rounded">stop_circle</span>Stop
+          </button>
+        </div>
+        <div id="highlights-panel" class="highlights-panel hidden"></div>
+        <div id="material-detail-content" class="material-content"></div>
+      </section>
+
+      <!-- Notes View -->
+      <section id="view-notes" class="view">
+        <div class="view-header">
+          <h2>Study Notes</h2>
+        </div>
+        <div id="notes-list" class="notes-list"></div>
+      </section>
+
+      <!-- Note Detail View -->
+      <section id="view-note-detail" class="view">
+        <div class="view-header">
+          <button class="btn btn-ghost" onclick="switchView('notes')">
+            <span class="material-symbols-rounded">arrow_back</span>Back
+          </button>
+          <h2 id="note-detail-title">Note</h2>
+          <button class="btn btn-secondary" onclick="speakNote()">
+            <span class="material-symbols-rounded">record_voice_over</span>Read Aloud
+          </button>
+        </div>
+        <div id="note-detail-content" class="note-content markdown-body"></div>
+      </section>
+
+      <!-- Exams View -->
+      <section id="view-exams" class="view">
+        <div class="view-header">
+          <h2>Mock Exams</h2>
+          <button class="btn btn-primary" onclick="showCreateExamModal()">
+            <span class="material-symbols-rounded">add</span>Create Exam
+          </button>
+        </div>
+        <div id="exams-list" class="exams-list"></div>
+      </section>
+
+      <!-- Exam Taking View -->
+      <section id="view-exam-take" class="view">
+        <div class="view-header">
+          <button class="btn btn-ghost" onclick="switchView('exams')">
+            <span class="material-symbols-rounded">arrow_back</span>Back
+          </button>
+          <h2 id="exam-take-title">Exam</h2>
+        </div>
+        <div id="exam-questions" class="exam-questions"></div>
+        <div class="exam-footer">
+          <button class="btn btn-primary btn-lg" id="submit-exam-btn" onclick="submitExam()">
+            <span class="material-symbols-rounded">check_circle</span>Submit Exam
+          </button>
+        </div>
+        <div id="exam-results" class="exam-results hidden"></div>
+      </section>
+
+      <!-- Chat View -->
+      <section id="view-chat" class="view">
+        <div class="view-header">
+          <h2>AI Study Tutor</h2>
+          <select id="chat-material-select" title="Select study material context" aria-label="Select material context for chat">
+            <option value="">General Chat (No Context)</option>
+          </select>
+        </div>
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-area">
+          <textarea id="chat-input" placeholder="Ask a question about your study material..." rows="2" aria-label="Chat message"></textarea>
+          <button class="btn btn-primary" onclick="sendChatMessage()" aria-label="Send message">
+            <span class="material-symbols-rounded">send</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Models View -->
+      <section id="view-models" class="view">
+        <div class="view-header">
+          <h2>Manage Models</h2>
+        </div>
+        <div class="models-panel">
+          <div class="card">
+            <h3><span class="material-symbols-rounded">download</span>Pull New Model</h3>
+            <p class="models-hint">Enter a model name from <a href="#" onclick="openOllamaLibrary()">ollama.com/library</a> to download it locally.</p>
+            <div class="pull-row">
+              <input type="text" id="pull-model-input" placeholder="e.g. llama3.2, mistral, gemma3" aria-label="Model name to pull">
+              <button class="btn btn-primary" onclick="pullModel()">
+                <span class="material-symbols-rounded">download</span>Pull
+              </button>
+            </div>
+            <div id="pull-progress-area" class="pull-progress hidden"></div>
+          </div>
+          <div class="card" style="margin-top: 20px;">
+            <h3><span class="material-symbols-rounded">smart_toy</span>Installed Models</h3>
+            <div id="installed-models-list" class="card-list"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal Overlay -->
+  <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modal-title">Modal</h3>
+        <button class="btn btn-ghost" onclick="closeModal()" aria-label="Close modal">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden" aria-live="polite">
+    <div class="loader">
+      <div class="loader-spinner"></div>
+      <p id="loading-text">Processing...</p>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="assertive"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

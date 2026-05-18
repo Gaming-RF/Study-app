@@ -1,0 +1,31 @@
+{
+  "name": "studyforge",
+  "version": "1.0.0",
+  "description": "AI-powered local study companion using Ollama",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "multer": "^1.4.5-lts.2",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.8.0",
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.studyforge.app",
+    "productName": "StudyForge",
+    "win": {
+      "target": "portable"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  }
+}
