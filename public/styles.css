@@ -241,6 +241,11 @@ a { color: var(--accent); text-decoration: none; }
 .material-icon.pdf { background: rgba(255,77,106,0.15); color: var(--danger); }
 .material-icon.docx { background: rgba(108,99,255,0.15); color: var(--accent); }
 .material-icon.txt { background: rgba(0,212,170,0.15); color: var(--accent2); }
+.material-icon.image { background: rgba(255,179,71,0.15); color: var(--warning); }
+.material-icon.spreadsheet { background: rgba(16,185,129,0.15); color: #10b981; }
+.material-icon.presentation { background: rgba(239,68,68,0.15); color: #ef4444; }
+.material-icon.book { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+.material-icon.code { background: rgba(161,161,170,0.15); color: #a1a1aa; }
 .material-info { flex: 1; }
 .material-info h4 { font-size: 0.95rem; margin-bottom: 4px; }
 .material-info span { font-size: 0.8rem; color: var(--text-muted); }

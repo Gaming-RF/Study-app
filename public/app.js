@@ -170,12 +170,23 @@ const els = {
 
 // === INIT ===
 async function init() {
-  setupNavigation();
-  setupEvents();
-  setupWindowControls();
-  await checkOllama();
-  await loadAllData();
-  switchView('dashboard');
+  console.log("Initializing app...");
+  try {
+    setupNavigation();
+    console.log("Navigation setup complete.");
+    setupEvents();
+    console.log("Events setup complete.");
+    setupWindowControls();
+    console.log("Window controls setup complete.");
+    await checkOllama();
+    console.log("Ollama check complete.");
+    await loadAllData();
+    console.log("All data loaded.");
+    switchView('dashboard');
+    console.log("Switched to dashboard view.");
+  } catch (e) {
+    console.error("Error during init:", e);
+  }
 }
 
 function setupWindowControls() {
@@ -267,24 +278,46 @@ function setupNavigation() {
 }
 
 function switchView(viewId) {
+  console.log("switchView called with viewId:", viewId);
+  console.log("Current state courses count:", state.courses ? state.courses.length : 'undefined');
+  console.log("Current state materials count:", state.materials ? state.materials.length : 'undefined');
+  
   // Remove active from all views, then activate the target
-  els.views.forEach(v => v.classList.remove('active'));
+  if (els.views) {
+    console.log("Removing active class from", els.views.length, "views");
+    els.views.forEach(v => v.classList.remove('active'));
+  } else {
+    console.warn("els.views is not defined!");
+  }
+  
   const target = document.getElementById(`view-${viewId}`);
-  if (target) target.classList.add('active');
+  if (target) {
+    console.log("Activating view:", `view-${viewId}`);
+    target.classList.add('active');
+  } else {
+    console.error("Target view element not found:", `view-${viewId}`);
+  }
   
   // Also update nav button highlighting for main views
   const navBtn = document.querySelector(`.nav-btn[data-view="${viewId}"]`);
   if (navBtn) {
-    els.navBtns.forEach(b => b.classList.remove('active'));
+    if (els.navBtns) {
+      els.navBtns.forEach(b => b.classList.remove('active'));
+    }
     navBtn.classList.add('active');
   }
   
-  if (viewId === 'dashboard') renderDashboard();
-  if (viewId === 'courses') renderCourses();
-  if (viewId === 'materials') renderMaterials();
-  if (viewId === 'notes') renderNotes();
-  if (viewId === 'exams') renderExams();
-  if (viewId === 'models') checkOllama();
+  try {
+    if (viewId === 'dashboard') renderDashboard();
+    if (viewId === 'courses') renderCourses();
+    if (viewId === 'materials') renderMaterials();
+    if (viewId === 'notes') renderNotes();
+    if (viewId === 'exams') renderExams();
+    if (viewId === 'models') checkOllama();
+    console.log("Render completed for viewId:", viewId);
+  } catch (err) {
+    console.error(`Error rendering view ${viewId}:`, err);
+  }
 }
 
 function setupEvents() {
@@ -318,14 +351,24 @@ function renderDashboard() {
   `;
 
   const recentM = [...state.materials].sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt)).slice(0, 5);
-  els.recentMaterials.innerHTML = recentM.length ? recentM.map(m => `
+  els.recentMaterials.innerHTML = recentM.length ? recentM.map(m => {
+    const ext = m.type.replace('.', '');
+    let cat = 'txt', icon = 'description';
+    if(ext === 'pdf') { cat='pdf'; icon='picture_as_pdf'; }
+    else if(['docx','md','txt'].includes(ext)) { cat='docx'; icon='article'; }
+    else if(['pptx'].includes(ext)) { cat='presentation'; icon='co_present'; }
+    else if(['xlsx','csv'].includes(ext)) { cat='spreadsheet'; icon='table_chart'; }
+    else if(['epub'].includes(ext)) { cat='book'; icon='menu_book'; }
+    else if(['png','jpg','jpeg','webp','bmp'].includes(ext)) { cat='image'; icon='image'; }
+    else if(['js','py','java','cpp','cs','html','css','json'].includes(ext)) { cat='code'; icon='code'; }
+    return `
     <div class="material-item" style="padding: 10px;" onclick="viewMaterial('${m.id}')">
-      <div class="material-icon ${m.type.replace('.','')}" style="width: 32px; height: 32px; font-size: 16px;">
-        <span class="material-symbols-rounded">description</span>
+      <div class="material-icon ${cat}" style="width: 32px; height: 32px; font-size: 16px;">
+        <span class="material-symbols-rounded">${icon}</span>
       </div>
       <div class="material-info"><h4 style="font-size: 0.85rem; margin: 0;">${m.filename}</h4></div>
-    </div>
-  `).join('') : '<p class="text-muted" style="font-size: 0.85rem; padding: 10px;">No materials uploaded yet.</p>';
+    </div>`;
+  }).join('') : '<p class="text-muted" style="font-size: 0.85rem; padding: 10px;">No materials uploaded yet.</p>';
 
   const recentN = [...state.notes].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
   els.recentNotes.innerHTML = recentN.length ? recentN.map(n => `
@@ -380,9 +423,17 @@ function renderMaterials() {
   els.materialsList.innerHTML = state.materials.map(m => {
     const course = state.courses.find(c => c.id === m.courseId);
     const ext = m.type.replace('.', '');
+    let cat = 'txt', icon = 'description';
+    if(ext === 'pdf') { cat='pdf'; icon='picture_as_pdf'; }
+    else if(['docx','md','txt'].includes(ext)) { cat='docx'; icon='article'; }
+    else if(['pptx'].includes(ext)) { cat='presentation'; icon='co_present'; }
+    else if(['xlsx','csv'].includes(ext)) { cat='spreadsheet'; icon='table_chart'; }
+    else if(['epub'].includes(ext)) { cat='book'; icon='menu_book'; }
+    else if(['png','jpg','jpeg','webp','bmp'].includes(ext)) { cat='image'; icon='image'; }
+    else if(['js','py','java','cpp','cs','html','css','json'].includes(ext)) { cat='code'; icon='code'; }
     return `
     <div class="material-item" onclick="viewMaterial('${m.id}')">
-      <div class="material-icon ${ext}"><span class="material-symbols-rounded">${ext === 'pdf' ? 'picture_as_pdf' : ext === 'docx' ? 'article' : 'description'}</span></div>
+      <div class="material-icon ${cat}"><span class="material-symbols-rounded">${icon}</span></div>
       <div class="material-info">
         <h4>${m.filename}</h4>
         <span>${course ? course.name : 'Unknown Course'} • ${(m.size / 1024 / 1024).toFixed(2)} MB</span>
@@ -540,7 +591,7 @@ function showUploadModal() {
       <div class="form-group">
         <div class="upload-area" id="drop-zone" onclick="selectFiles()">
           <span class="material-symbols-rounded">cloud_upload</span>
-          <p>Click to browse files (PDF, DOCX, TXT, MD)</p>
+          <p>Click to browse files (PDF, Office, ePub, Images, Code, Text)</p>
         </div>
         <div id="upload-files-list" class="upload-files-list"></div>
       </div>

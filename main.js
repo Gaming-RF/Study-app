@@ -24,18 +24,79 @@ function db(name) {
 // ─── TEXT EXTRACTION ───────────────────────────────────────────────────────────
 async function extractText(filePath) {
   const ext = path.extname(filePath).toLowerCase();
-  if (ext === '.txt' || ext === '.md') return fs.readFileSync(filePath, 'utf-8');
+  
+  // Code and plain text files
+  const textFormats = ['.txt', '.md', '.csv', '.json', '.xml', '.css', '.js', '.py', '.java', '.c', '.cpp', '.h', '.cs', '.php', '.rb', '.go', '.rs', '.ts', '.sh', '.bat', '.ps1'];
+  if (textFormats.includes(ext)) return fs.readFileSync(filePath, 'utf-8');
+
+  // HTML
+  if (ext === '.html' || ext === '.htm') {
+    const { convert } = require('html-to-text');
+    return convert(fs.readFileSync(filePath, 'utf-8'));
+  }
+
+  // PDF
   if (ext === '.pdf') {
     const pdfParse = require('pdf-parse');
-    const buf = fs.readFileSync(filePath);
-    const data = await pdfParse(buf);
-    return data.text;
+    return (await pdfParse(fs.readFileSync(filePath))).text;
   }
+
+  // Word Docs
   if (ext === '.docx') {
     const mammoth = require('mammoth');
-    const res = await mammoth.extractRawText({ path: filePath });
-    return res.value;
+    return (await mammoth.extractRawText({ path: filePath })).value;
   }
+
+  // PowerPoint
+  if (ext === '.pptx') {
+    const officeParser = require('officeparser');
+    try {
+      return await officeParser.parseOfficeAsync(filePath);
+    } catch (e) { return ''; }
+  }
+
+  // Excel
+  if (ext === '.xlsx') {
+    const xlsx = require('xlsx');
+    const workbook = xlsx.readFile(filePath);
+    let text = '';
+    workbook.SheetNames.forEach(sheetName => {
+      text += `--- ${sheetName} ---\n`;
+      text += xlsx.utils.sheet_to_csv(workbook.Sheets[sheetName]) + '\n';
+    });
+    return text;
+  }
+
+  // ePub
+  if (ext === '.epub') {
+    const EPub = require('epub2').EPub;
+    const { convert } = require('html-to-text');
+    return await new Promise((resolve) => {
+      const epub = new EPub(filePath, '/imagewebroot/', '/articlewebroot/');
+      epub.on('end', async () => {
+        let text = '';
+        for (const chapter of epub.flow) {
+          try {
+            const chapText = await new Promise((res) => epub.getChapter(chapter.id, (err, txt) => res(txt || '')));
+            text += convert(chapText) + '\n\n';
+          } catch(e) {}
+        }
+        resolve(text);
+      });
+      epub.on('error', () => resolve(''));
+      epub.parse();
+    });
+  }
+
+  // Images (OCR)
+  if (['.png', '.jpg', '.jpeg', '.bmp', '.webp'].includes(ext)) {
+    const Tesseract = require('tesseract.js');
+    try {
+      const { data: { text } } = await Tesseract.recognize(filePath, 'eng');
+      return text;
+    } catch(e) { return ''; }
+  }
+
   return '';
 }
 
@@ -144,7 +205,7 @@ ipcMain.handle('ollama-pull-model', async (event, { model }) => {
 ipcMain.handle('open-file-dialog', async () => {
   const result = await dialog.showOpenDialog(win, {
     properties: ['openFile', 'multiSelections'],
-    filters: [{ name: 'Study Materials', extensions: ['pdf', 'docx', 'txt', 'md'] }]
+    filters: [{ name: 'Study Materials', extensions: ['pdf', 'docx', 'pptx', 'xlsx', 'epub', 'txt', 'md', 'csv', 'json', 'html', 'htm', 'png', 'jpg', 'jpeg', 'bmp', 'webp', 'js', 'py', 'java', 'cpp', 'cs'] }]
   });
   return result.filePaths;
 });
